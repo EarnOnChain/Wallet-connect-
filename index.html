@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal WalletConnect Integration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/client@2.0.0-beta.31/dist/umd/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(25, 25, 46, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            color: #a9b7d0;
+            font-size: 1.1rem;
+        }
+        
+        .status-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            background: rgba(67, 97, 238, 0.2);
+            color: #4361ee;
+        }
+        
+        .status-icon.connected {
+            background: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+        }
+        
+        .status-text {
+            text-align: center;
+        }
+        
+        .status-text h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .status-text p {
+            color: #a9b7d0;
+        }
+        
+        .wallet-address {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            margin: 10px 0;
+            word-break: break-all;
+            text-align: center;
+        }
+        
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 16px 24px;
+            border-radius: 15px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .connect-btn {
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+        }
+        
+        .connect-btn:hover {
+            background: linear-gradient(90deg, #3a0ca3, #4361ee);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .disconnect-btn {
+            background: linear-gradient(90deg, #f72585, #b5179e);
+        }
+        
+        .disconnect-btn:hover {
+            background: linear-gradient(90deg, #b5179e, #f72585);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
+        }
+        
+        .wallet-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e1e2e 0%, #1a1a2e 100%);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #a9b7d0;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #fff;
+        }
+        
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .modal-header p {
+            color: #a9b7d0;
+        }
+        
+        .wallet-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .wallet-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .wallet-option:hover {
+            background: rgba(67, 97, 238, 0.2);
+            border-color: rgba(67, 97, 238, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        .wallet-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .wallet-info {
+            flex: 1;
+        }
+        
+        .wallet-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        
+        .wallet-info p {
+            color: #a9b7d0;
+            font-size: 0.9rem;
+        }
+        
+        .qrcode-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        #qrcode {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .deep-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .deep-link {
+            padding: 10px 15px;
+            background: rgba(67, 97, 238, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .deep-link:hover {
+            background: rgba(67, 97, 238, 0.3);
+        }
+        
+        .back-btn {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #a9b7d0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #4cc9f0;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            color: #a9b7d0;
+        }
+        
+        .compatible-wallets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .wallet-badge {
+            background: rgba(76, 201, 240, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .status-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
+            
+            .status-text h2 {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: 14px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>WalletConnect</h1>
+            <p class="subtitle">Connect to Trust Wallet and 300+ other wallets</p>
+        </header>
+        
+        <div class="status-container">
+            <div class="status-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="status-text">
+                <h2>Wallet Not Connected</h2>
+                <p>Connect your wallet to get started</p>
+            </div>
+        </div>
+        
+        <div class="buttons-container">
+            <button id="connectBtn" class="btn connect-btn">
+                <i class="fas fa-plug"></i>
+                Connect Wallet
+            </button>
+            <button id="disconnectBtn" class="btn disconnect-btn" style="display: none;">
+                <i class="fas fa-plug"></i>
+                Disconnect Wallet
+            </button>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Connect:</h3>
+            <ol>
+                <li>Click "Connect Wallet" button</li>
+                <li>Select your wallet from the list</li>
+                <li>Approve connection in your wallet app</li>
+            </ol>
+            
+            <div class="compatible-wallets">
+                <div class="wallet-badge"><i class="fab fa-ethereum"></i> Trust Wallet</div>
+                <div class="wallet-badge"><i class="fab fa-ethereum"></i> MetaMask</div>
+                <div class="wallet-badge"><i class="fab fa-ethereum"></i> Coinbase Wallet</div>
+                <div class="wallet-badge"><i class="fab fa-ethereum"></i> Rainbow</div>
+                <div class="wallet-badge"><i class="fab fa-ethereum"></i> Argent</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="walletModal" class="wallet-modal">
+        <div class="modal-content">
+            <div class="close-modal">&times;</div>
+            
+            <div class="modal-header">
+                <h2>Connect Wallet</h2>
+                <p>Select your preferred wallet to connect</p>
+            </div>
+            
+            <div id="walletOptions" class="wallet-options">
+                <div class="wallet-option" data-wallet="trust">
+                    <div class="wallet-icon" style="background: rgba(52, 152, 219, 0.2); color: #3498db;">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="wallet-info">
+                        <h3>Trust Wallet</h3>
+                        <p>Mobile app and browser extension</p>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                
+                <div class="wallet-option" data-wallet="metamask">
+                    <div class="wallet-icon" style="background: rgba(240, 185, 11, 0.2); color: #f0b90b;">
+                        <i class="fab fa-ethereum"></i>
+                    </div>
+                    <div class="wallet-info">
+                        <h3>MetaMask</h3>
+                        <p>Browser extension and mobile app</p>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+                
+                <div class="wallet-option" data-wallet="walletconnect">
+                    <div class="wallet-icon" style="background: rgba(59, 153, 252, 0.2); color: #3b99fc;">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="wallet-info">
+                        <h3>WalletConnect</h3>
+                        <p>Connect any WalletConnect-compatible wallet</p>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <div id="qrcodeContainer" class="qrcode-container">
+                <div id="qrcode"></div>
+                <p>Scan this QR code with your wallet</p>
+                
+                <div class="deep-links">
+                    <div class="deep-link" id="trustLink">
+                        <i class="fas fa-external-link-alt"></i>
+                        Open in Trust Wallet
+                    </div>
+                    <div class="deep-link" id="metamaskLink">
+                        <i class="fas fa-external-link-alt"></i>
+                        Open in MetaMask
+                    </div>
+                </div>
+                
+                <button class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Wallet Selection
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const walletModal = document.getElementById('walletModal');
+        const closeModal = document.querySelector('.close-modal');
+        const walletOptions = document.getElementById('walletOptions');
+        const qrcodeContainer = document.getElementById('qrcodeContainer');
+        const backBtn = document.querySelector('.back-p love');
+        const trustLink = document.getElementById('trustLink');
+        const metamaskLink = document.getElementById('metamaskLink');
+        const statusContainer = document.querySelector('.status-container');
+        const statusIcon = document.querySelector('.status-icon');
+        const statusText = document.querySelector('.status-text h2');
+        const statusDesc = document.querySelector('.status-text p');
+        
+        // WalletConnect variables
+        let connector = null;
+        
+        // Initialize WalletConnect
+        function initWalletConnect() {
+            // Replace with your WalletConnect Project ID from https://cloud.walletconnect.com
+            const projectId = '14848dd5f3d6d43d0b8afc73d46d2a93';
+            
+            connector = new WalletConnect.Client({
+                projectId: projectId,
+                metadata: {
+                    name: "WalletConnect Demo",
+                    description: "Demo for Trust Wallet and other wallets",
+                    url: window.location.href,
+                    icons: ["https://walletconnect.com/walletconnect-logo.png"]
+                }
+            });
+            
+            // Subscribe to connection events
+            connector.on("session_proposal", (error, payload) => {
+                if (error) {
+                    console.error("Session proposal error:", error);
+                    return;
+                }
+                
+                // Generate QR code
+                const { uri } = payload.params;
+                generateQRCode(uri);
+                
+                // Create deep links
+                createDeepLinks(uri);
+            });
+            
+            connector.on("connect", (error, payload) => {
+                if (error) {
+                    console.error("Connection error:", error);
+                    return;
+                }
+                
+                const { accounts } = payload;
+                if (accounts && accounts.length > 0) {
+                    onWalletConnected(accounts[0]);
+                }
+            });
+            
+            connector.on("disconnect", (error) => {
+                if (error) {
+                    console.error("Disconnect error:", error);
+                }
+                onWalletDisconnected();
+            });
+            
+            // Check if already connected
+            if (connector.connected) {
+                onWalletConnected(connector.accounts[0]);
+            }
+        }
+        
+        // Generate QR Code
+        function generateQRCode(uri) {
+            const qr = qrcode(0, 'M');
+            qr.addData(uri);
+            qr.make();
+            
+            const qrElement = document.getElementById('qrcode');
+            qrElement.innerHTML = qr.createImgTag(6);
+            qrElement.querySelector('img').style.display = 'block';
+            qrElement.querySelector('img').style.margin = '0 auto';
+        }
+        
+        // Create deep links
+        function createDeepLinks(uri) {
+            // Trust Wallet deep link
+            trustLink.onclick = () => {
+                window.location.href = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(uri)}`;
+            };
+            
+            // MetaMask deep link
+            metamaskLink.onclick = () => {
+                window.location.href = `https://metamask.app.link/wc?uri=${encodeURIComponent(uri)}`;
+            };
+        }
+        
+        // Handle wallet selection
+        walletOptions.addEventListener('click', (e) => {
+            const walletOption = e.target.closest('.wallet-option');
+            if (!walletOption) return;
+            
+            const walletType = walletOption.getAttribute('data-wallet');
+            
+            switch(walletType) {
+                case 'trust':
+                    if (window.ethereum && window.ethereum.isTrust) {
+                        // Connect to Trust Wallet extension
+                        connectTrustWallet();
+                    } else {
+                        // Show QR code for mobile
+                        walletOptions.style.display = 'none';
+                        qrcodeContainer.style.display = 'flex';
+                        
+                        // Create new WalletConnect session
+                        connector.createSession();
+                    }
+                    break;
+                    
+                case 'metamask':
+                    if (window.ethereum && window.ethereum.isMetaMask) {
+                        // Connect to MetaMask extension
+                        connectMetaMask();
+                    } else {
+                        // S
